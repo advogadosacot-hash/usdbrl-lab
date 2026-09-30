@@ -43,3 +43,27 @@ Estas decisões só mudam com aprovação explícita. Os testes em
 | Python | 3.12 | Decisão T1 |
 | Dependências de runtime | Nenhuma na fase 0 | Cada fase adiciona só o que usa |
 | Dependências de desenvolvimento | `pytest`, `ruff` | Testes e lint do CI |
+
+## Decisões técnicas da Fase 1 (dentro da especificação)
+
+| Tema | Escolha | Motivo |
+| --- | --- | --- |
+| Dependências de runtime | `pandas`, `pyarrow`, `requests` (stack T1) e `tzdata` | `tzdata` garante o fuso `America/Sao_Paulo` da PTAX em qualquer SO |
+| Limites do Yahoo (medidos em 2026-09-30) | 1m: 30 dias (blocos de 7); 5m: 60 dias; 1h: 730 dias por período, ~2,8 anos com `range=730d` | Define o backfill e a coleta incremental |
+| 1 dia | Não coletado do Yahoo | Seção 5: 1 dia é reamostrado do 5 min |
+| Regras de mudança anormal e feed congelado | Só na grade de 5 min, só entre candles separados por exatamente 5 min | Seção 6 define essas regras para o retorno de 5 min; o salto entre fechamento e abertura não é retorno de 5 min |
+| 1 min | Guardado como veio (só plausibilidade), sem imputação | Seção 5: 1 min é arquivo de auditoria, não grade de modelo |
+| Lacunas | Imputação de até 2 candles só entre candles válidos do mesmo dia | Nunca herda o close do dia anterior na abertura |
+| `available_time` numa revisão da fonte | Mantém o menor valor já registrado | Não atrasa artificialmente quando o dado ficou disponível |
+| Arquivos Parquet | Regravados só quando o conteúdo muda | Evita crescimento do histórico do Git no `usdbrl-data` |
+| Coletor provisório | `collect.yml`, de hora em hora, 12:07–22:07 UTC, dias úteis | Prioridade da fase 1: continuidade do histórico (o Yahoo guarda 30 dias de 1 min) |
+
+## Pontos para decisão antes da Fase 6 (não alteram nada aprovado)
+
+- **Componente de consistência de Q.** A seção 6 prevê comparar o Yahoo com uma segunda fonte intraday
+  (AwesomeAPI), que está bloqueada (P6). Hoje o componente é registrado como indisponível (`None`) e
+  não entra no mínimo de Q. Q ainda não é usado por nenhuma previsão; antes da fase 6 é preciso decidir
+  se a ausência de segunda fonte deve deixar Q como "normal" ou "degradado".
+- **Mudança anormal sem segunda fonte.** Pela regra literal da seção 6, um salto de 5 min acima do
+  limite que não pode ser confirmado é rejeitado. Sem segunda fonte, um movimento real e brusco também
+  será rejeitado (só o candle do salto; os seguintes não são afetados).

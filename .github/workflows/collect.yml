@@ -1,0 +1,85 @@
+# Coletor PROVISÓRIO da fase 1 (roadmap, seção 31): arquiva o histórico intraday enquanto as
+# fases seguintes são construídas. Será substituído pelo pipeline.yml na fase 8.
+#
+# Yahoo → validação/qualidade → normalização → armazenamento no repositório PRIVADO usdbrl-data.
+# O log deste workflow é público: o comando imprime só contagens e decisões, nunca preços (D2).
+name: collect
+
+on:
+  schedule:
+    # De hora em hora, dias úteis, 12:07–22:07 UTC (pregão 12:00–21:00 + fechamento do dia).
+    - cron: "7 12-22 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      backfill:
+        description: "Coletar todo o histórico disponível (1m: 30 dias; 5m: 60 dias; 1h: ~2,8 anos)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: data-writer
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    env:
+      # Chave pública SSH do GitHub, publicada em https://api.github.com/meta
+      # (SHA256 +DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU).
+      GITHUB_HOST_KEY: "github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl"
+      DATA_REPO: git@github.com:${{ github.repository_owner }}/usdbrl-data.git
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      - name: Instalar Python 3.12 e dependências (lock verificado, sem dev)
+        run: |
+          uv python install 3.12
+          uv sync --locked --no-dev
+
+      - name: Configurar deploy key
+        env:
+          DATA_REPO_DEPLOY_KEY: ${{ secrets.DATA_REPO_DEPLOY_KEY }}
+        run: |
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$DATA_REPO_DEPLOY_KEY" > "$HOME/.ssh/id_data"
+          chmod 600 "$HOME/.ssh/id_data"
+          printf '%s\n' "$GITHUB_HOST_KEY" > "$HOME/.ssh/known_hosts"
+          echo "GIT_SSH_COMMAND=ssh -i $HOME/.ssh/id_data -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes" >> "$GITHUB_ENV"
+
+      - name: Clonar o repositório de dados
+        run: git clone --quiet --depth 1 "$DATA_REPO" data
+
+      - name: Coletar
+        env:
+          BACKFILL: ${{ inputs.backfill }}
+        run: |
+          args=(--data-dir data)
+          if [ "$BACKFILL" = "true" ]; then args+=(--backfill); fi
+          uv run --no-dev usdbrl-lab ingest "${args[@]}"
+
+      - name: Gravar no repositório de dados
+        # Grava mesmo se a coleta falhar: o registro da falha (ops/) também é histórico.
+        if: always() && hashFiles('data/README.md') != ''
+        working-directory: data
+        run: |
+          git config user.name "usdbrl-lab-bot"
+          git config user.email "usdbrl-lab-bot@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Nada novo para gravar."
+            exit 0
+          fi
+          git commit --quiet -m "data: coleta run $GITHUB_RUN_ID"
+          git push --quiet origin HEAD
+          echo "Gravado no usdbrl-data."
+
+      - name: Remover a chave do runner
+        if: always()
+        run: rm -f "$HOME/.ssh/id_data"

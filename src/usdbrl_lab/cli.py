@@ -1,16 +1,31 @@
 """Linha de comando do usdbrl-lab.
 
-Fase 0 expõe apenas ``version`` e ``config-check``. Os comandos de coleta, previsão,
-resolução, treino e publicação entram nas fases correspondentes.
+Fase 1: ``version``, ``config-check`` e ``ingest``. Os comandos de previsão, resolução,
+treino e publicação entram nas fases correspondentes.
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import sys
+from pathlib import Path
 
 from usdbrl_lab import __version__
 from usdbrl_lab.common.config import ConfigError, load_config
+
+
+def _cmd_ingest(args: argparse.Namespace) -> int:
+    from usdbrl_lab.ingest.run import run_ingest
+
+    data_dir = Path(args.data_dir)
+    if not data_dir.is_dir():
+        print(f"ERRO: diretório de dados não existe: {data_dir}", file=sys.stderr)
+        return 1
+    summary = run_ingest(data_dir, backfill=args.backfill)
+    # Só contagens e decisões: este texto aparece nos logs públicos do Actions.
+    print(json.dumps(summary, ensure_ascii=False, indent=2, default=str))
+    return 1 if summary["status"] == "failed" else 0
 
 
 def _cmd_version(_: argparse.Namespace) -> int:
@@ -40,6 +55,12 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("config-check", help="valida config/*.toml e mostra o config_sha").set_defaults(
         func=_cmd_config_check
     )
+    ingest = sub.add_parser("ingest", help="coleta Yahoo + PTAX e grava no repositório de dados")
+    ingest.add_argument("--data-dir", required=True, help="clone local do usdbrl-data")
+    ingest.add_argument(
+        "--backfill", action="store_true", help="coleta todo o histórico disponível"
+    )
+    ingest.set_defaults(func=_cmd_ingest)
     return parser
 
 

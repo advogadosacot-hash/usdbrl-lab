@@ -4,8 +4,13 @@ version = "0.1.0"
 description = "Laboratório experimental de previsão probabilística do USD/BRL (uso pessoal)."
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
-# Fase 0: nenhuma dependência de runtime. Cada fase adiciona apenas o que usa.
-dependencies = []
+# Cada fase adiciona apenas o que usa. Fase 1: coleta, normalização e armazenamento.
+dependencies = [
+    "pandas>=3.0.6",
+    "pyarrow>=25.0.1",
+    "requests>=2.34.2",
+    "tzdata>=2026.4",
+]
 # Sem licença própria (decisão P9): todos os direitos reservados.
 classifiers = ["Private :: Do Not Upload"]
 
@@ -24,6 +29,7 @@ build-backend = "uv_build"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["tests"]
 addopts = "-ra --strict-markers"
 
 [tool.ruff]

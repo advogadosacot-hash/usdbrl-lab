@@ -14,14 +14,38 @@ excluded_v1 = ["binance"]
 [yahoo]
 role = "primary"
 symbol = "BRL=X"
-intervals = ["1m", "5m", "1h", "1d"]
+# 1 dia não é coletado: é reamostrado a partir do 5 min (seção 5).
+intervals = ["1m", "5m", "1h"]
 publish_raw = false        # D2: dados brutos do Yahoo nunca no repositório público
 storage = "private"        # P1: usdbrl-data
+base_url = "https://query1.finance.yahoo.com/v8/finance/chart/"
+
+# Limites medidos em 2026-09-30 (consultas por period1/period2).
+# 1h: o parâmetro range=730d devolve ~2,8 anos e é usado só no backfill.
+[yahoo.retention_days]
+1m = 29
+5m = 59
+1h = 729
+
+[yahoo.chunk_days]
+1m = 7
+5m = 59
+1h = 700
+
+[yahoo.incremental_overlap_hours]
+1m = 6
+5m = 24
+1h = 72
 
 [bcb.ptax]
-role = "official_reference"
+role = "official_reference"  # referência oficial; NUNCA substitui candles intraday
 currency = "USD"
 publish_allowed = true     # dado aberto; usado no painel (P2, alternativa 2)
+base_url = "https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/"
+local_timezone = "America/Sao_Paulo"   # dataHoraCotacao vem em horário de Brasília
+backfill_start = "2023-01-01"          # cobre todo o histórico de 1 h do Yahoo
+incremental_lookback_days = 7
+closing_bulletin = "Fechamento"
 
 [bcb.sgs]
 role = "macro_context"
