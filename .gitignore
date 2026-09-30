@@ -1,0 +1,30 @@
+# Ambiente
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+dist/
+build/
+*.egg-info/
+
+# Segredos: nunca versionar (seção 29 da especificação)
+.env
+.env.*
+*.key
+*.pem
+id_*
+!id_*.pub
+
+# Dados: tudo que contém preços do Yahoo vive no repositório privado usdbrl-data (P1)
+data/
+*.parquet
+*.duckdb
+*.sqlite
+*.db
+
+# Editores / SO
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

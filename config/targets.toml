@@ -1,0 +1,44 @@
+# Definição do alvo (seção 9 da especificação; decisão P5 aprovada em 2026-09-30).
+# CONGELADO: qualquer mudança exige declarar target_v2 e nova aprovação.
+schema_version = 1
+
+[target_v1]
+version = "target_v1"
+classes = ["up", "neutral", "down"]
+# k = Φ^{-1}(2/3), fixado pela teoria, sem olhar resultados.
+k = 0.4307
+# σ̂ do target é SEMPRE EWMA. GARCH só concorre na faixa/volatilidade (nunca no target_v1).
+sigma_estimator = "ewma"
+ewma_lambda = 0.94
+return_definition = "log"  # r = ln(P(t+h) / P(t))
+
+# Um target por horizonte (decisão D4). n_bars = candles da grade em h.
+[target_v1.horizons.5m]
+grid = "5m"
+n_bars = 1
+end_rule = "clock"
+
+[target_v1.horizons.15m]
+grid = "5m"
+n_bars = 3
+end_rule = "clock"
+
+[target_v1.horizons.1h]
+grid = "5m"
+n_bars = 12
+end_rule = "clock"
+
+[target_v1.horizons.4h]
+grid = "1h"
+n_bars = 4
+end_rule = "clock"
+
+[target_v1.horizons.24h]
+grid = "1h"
+# P3: mesmo horário do próximo pregão; σ̂ = EWMA dos retornos "mesmo horário → próximo pregão".
+end_rule = "same_time_next_session"
+sigma_series = "session_to_session"
+
+[target_v1.resolution]
+# Candle final vazio: usa último close válido até 2 candles antes; senão "unresolvable".
+max_lookback_bars = 2

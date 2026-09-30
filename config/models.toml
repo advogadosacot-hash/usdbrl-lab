@@ -1,0 +1,64 @@
+# Família de modelos, calibração, faixa e walk-forward (seções 10–13). Implementação nas fases 3–5.
+schema_version = 1
+
+[baselines.B0]
+name = "random_walk"
+[baselines.B1]
+name = "class_frequency"
+window_sessions = 60
+
+[volatility.V1]
+name = "ewma"
+lambda = 0.94
+grids = ["5m", "1h", "session_to_session"]
+[volatility.V2]
+name = "garch_1_1_student_t"
+grids = ["1h", "session_to_session"]
+# V2 só concorre na faixa/volatilidade; nunca altera target_v1 (P5).
+affects_target = false
+
+[experiments]
+enabled = ["gjr_garch", "egarch", "garch_5m_deseasonalized", "arima_returns"]
+
+[classifiers.M1]
+name = "logistic_multinomial"
+penalty = "l2"
+c_selection = "inner_time_series_cv"
+
+[classifiers.M2]
+name = "lightgbm_multiclass"
+num_leaves = 15
+max_depth = 4
+learning_rate = 0.03
+max_estimators = 500
+early_stopping = "final_time_slice_of_train"
+min_data_in_leaf = 200
+feature_fraction = 0.8
+bagging_fraction = 0.8
+lambda_l2 = 1.0
+max_grid_combinations = 8
+
+[calibration]
+slice_fraction = 0.2
+method = "temperature"
+shrink_to = "B1"
+isotonic_min_per_class = 1000
+prob_clip = [0.02, 0.90]
+weak_signal_w_below = 0.2
+
+[intervals]
+method = "empirical_sigma_scaled"
+levels = [0.8, 0.5]
+window_sessions = 60
+
+[walkforward]
+window = "expanding"
+purge = "timestamp"
+[walkforward.grid_5m]
+min_train_sessions = 20
+test_block_sessions = 5
+holdout_sessions = 10
+[walkforward.grid_1h]
+min_train_sessions = 250
+test_block_sessions = 20
+holdout_months = 6

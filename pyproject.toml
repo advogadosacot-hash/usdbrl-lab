@@ -1,0 +1,38 @@
+[project]
+name = "usdbrl-lab"
+version = "0.1.0"
+description = "Laboratório experimental de previsão probabilística do USD/BRL (uso pessoal)."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+# Fase 0: nenhuma dependência de runtime. Cada fase adiciona apenas o que usa.
+dependencies = []
+# Sem licença própria (decisão P9): todos os direitos reservados.
+classifiers = ["Private :: Do Not Upload"]
+
+[project.scripts]
+usdbrl-lab = "usdbrl_lab.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "ruff>=0.6",
+]
+
+[build-system]
+requires = ["uv_build>=0.8,<0.12"]
+build-backend = "uv_build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "DTZ"]
+ignore = []
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]

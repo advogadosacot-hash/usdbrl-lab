@@ -1,0 +1,42 @@
+# Regras de qualidade dos dados (seção 6). Valores INICIAIS: serão ajustados na fase 1
+# com 7 pregões coletados, olhando só o comportamento dos dados (nunca o acerto das previsões).
+schema_version = 1
+
+[stale]
+extra_minutes = 10          # em pregão: idade > intervalo + 10 min => frescor degradado
+block_minutes = 30          # > 30 min => bloqueio
+
+[duplicates]
+key = ["source", "symbol", "interval", "event_time"]
+keep = "latest_ingested"
+
+[frozen_feed]
+identical_closes_5m = 6     # >= 6 candles de 5 min idênticos em pregão => suspeito
+
+[missing]
+impute_max_consecutive = 2  # até 2 seguidos: repete último close e marca "imputed"
+degrade_window_bars = 12
+degrade_fraction = 0.10
+block_fraction = 0.25       # bloqueia 5m/15m/1h
+
+[plausibility]
+min_price = 2.0
+max_price = 15.0
+
+[anomaly]
+sigma_multiple = 8
+min_abs_return_pct = 1.5
+confirm_tolerance_pct = 0.3
+
+[divergence]
+degrade_pct = 0.3
+block_pct = 1.0
+ptax_alert_pct = 1.5
+
+[score]
+component_ok = 1.0
+component_degraded = 0.85
+component_blocked = 0.0
+close_only_max = 0.85
+normal_min = 0.90
+publish_min = 0.70

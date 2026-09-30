@@ -1,0 +1,59 @@
+# Verificação manual do acesso ao repositório privado usdbrl-data (critério da fase 0).
+# Lê o README e grava ops/healthcheck/last.json — nenhum dado de mercado envolvido.
+# A deploy key só existe no environment "production", restrito ao branch main.
+name: data-access-check
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: data-writer
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: production
+    env:
+      # Chave pública SSH do GitHub, publicada em https://api.github.com/meta
+      # (SHA256 +DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU).
+      GITHUB_HOST_KEY: "github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl"
+      DATA_REPO: git@github.com:${{ github.repository_owner }}/usdbrl-data.git
+    steps:
+      - name: Configurar deploy key
+        env:
+          DATA_REPO_DEPLOY_KEY: ${{ secrets.DATA_REPO_DEPLOY_KEY }}
+        run: |
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$DATA_REPO_DEPLOY_KEY" > "$HOME/.ssh/id_data"
+          chmod 600 "$HOME/.ssh/id_data"
+          printf '%s\n' "$GITHUB_HOST_KEY" > "$HOME/.ssh/known_hosts"
+          echo "GIT_SSH_COMMAND=ssh -i $HOME/.ssh/id_data -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes" >> "$GITHUB_ENV"
+
+      - name: Ler o repositório de dados
+        run: |
+          git clone --depth 1 "$DATA_REPO" data
+          test -f data/README.md
+          echo "Leitura OK"
+
+      - name: Gravar no repositório de dados
+        working-directory: data
+        run: |
+          mkdir -p ops/healthcheck
+          printf '{"checked_at":"%s","run_id":"%s","code_sha":"%s"}\n' \
+            "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$GITHUB_RUN_ID" "$GITHUB_SHA" \
+            > ops/healthcheck/last.json
+          git config user.name "usdbrl-lab-bot"
+          git config user.email "usdbrl-lab-bot@users.noreply.github.com"
+          git add ops/healthcheck/last.json
+          git commit -m "ops: data-access-check run $GITHUB_RUN_ID"
+          git push origin HEAD
+          echo "Escrita OK"
+
+      - name: Remover a chave do runner
+        if: always()
+        run: rm -f "$HOME/.ssh/id_data"

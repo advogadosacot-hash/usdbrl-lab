@@ -1,0 +1,51 @@
+# Promotion Gate, rebaixamento e sistema de confiança (seções 16 e 17).
+# CONGELADO como gate_v1 (decisão P7, 2026-09-30). Não ajustar após observar resultados:
+# qualquer mudança cria gate_v2 e é registrada como decisão metodológica.
+schema_version = 1
+
+[gate_v1]
+version = "gate_v1"
+primary_metric = "log_loss_skill_vs_B1"
+G0_same_target_version = true
+G1_min_fraction_q_normal = 0.90
+G2_min_non_overlapping_walkforward = 300
+G4_dm_pvalue_vs_baselines = 0.05
+G4_shadow_skill_positive = true
+G5_dm_pvalue_vs_champion = 0.10
+G6_max_brier_worse_pct = 1.0
+G6_max_ece_worse = 0.01
+G7_min_fraction_positive_folds = 0.60
+G7_worst_fold_skill = -0.02
+G8_max_ece = 0.05
+G8_calibration_slope = [0.8, 1.2]
+G9_coverage_80 = [0.75, 0.85]
+G10_holdout_skill_positive = true
+manual_promotion_allowed = false
+
+[gate_v1.G3_shadow_sessions]
+5m = 10
+15m = 10
+1h = 10
+4h = 20
+24h = 40
+
+[demotion_v1]
+window_resolved = 300
+dm_pvalue = 0.10
+max_live_ece = 0.10
+
+[confidence_v1]
+signal_strength_pp = [5, 15]          # < 5 fraca; 5–15 moderada; > 15 forte
+model_confidence_high_pvalue = 0.01
+model_confidence_medium_pvalue = 0.05
+js_disagreement = 0.1
+live_ece_downgrade = 0.05
+live_ece_suspend = 0.10
+live_window = 300
+min_effective_n = 30
+vol_regime_percentiles = [25, 75]
+vol_regime_sessions = 250
+
+[event_blackout_v1]
+horizons = ["5m", "15m", "1h"]
+extra_minutes = 15                    # bloqueio se evento de alto impacto em h + 15 min

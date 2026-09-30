@@ -1,0 +1,25 @@
+# Sessão de mercado e janelas de emissão (seção 5; decisão P3 aprovada).
+schema_version = 1
+
+storage_timezone = "UTC"
+display_timezone = "America/Sao_Paulo"
+
+[session]
+# Medido em 2026-09-30: candles válidos de 5 min entre 12:00 e 20:59 UTC.
+open_utc = "12:00"
+close_utc = "21:00"
+# Dia útil sem candles válidos = mercado fechado (feriados detectados pelos dados).
+holidays_from_data = true
+
+[candles]
+label = "start"            # candle rotulado pelo início
+close_grace_minutes = 2    # fechado quando agora >= início + intervalo + 2 min
+resample_min_valid_fraction = 0.8
+
+# Janelas de emissão em horário de Brasília (inclusive), por horizonte.
+[emission_windows_local]
+5m = ["09:00", "17:55"]
+15m = ["09:00", "17:45"]
+1h = ["09:00", "17:00"]
+4h = ["09:00", "14:00"]
+24h = ["09:00", "17:00"]

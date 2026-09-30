@@ -1,0 +1,52 @@
+# Conjuntos de features versionados (seções 7 e 8). Implementação na fase 2.
+schema_version = 1
+
+[fs_v1]
+version = "fs_v1"
+description = "Somente a própria série: preço, volatilidade, tendência, momentum, estrutura, tempo, evento."
+normalization = "atr_or_sigma_units"
+
+[fs_v1.windows.grid_5m]
+log_return_k = [1, 3, 12]
+ema = [20, 50, 200]
+dist_high_low_n = [12, 48]
+range_n = [1, 12]
+realized_vol_n = [12, 48]
+parkinson_n = 12
+vol_ratio = [12, 48]
+range_position_n = 48
+roc_n = 12
+
+[fs_v1.windows.grid_1h]
+log_return_k = [1, 4, 24]
+ema = [20, 50, 200]
+dist_high_low_n = [8, 24]
+range_n = [1, 8]
+realized_vol_n = [8, 24]
+parkinson_n = 8
+vol_ratio = [8, 24]
+range_position_n = 24
+roc_n = 24
+
+[fs_v1.indicators]
+rsi = { period = 14, smoothing = "wilder", warmup_bars = 150 }
+macd = { fast = 12, slow = 26, signal = 9, warmup_bars = 150 }
+bollinger = { period = 20, n_std = 2, warmup_bars = 20 }
+atr = { period = 14, smoothing = "wilder", warmup_bars = 150 }
+adx = { period = 14, smoothing = "wilder", warmup_bars = 150 }
+stochastic = { k = 14, d = 3, warmup_bars = 17 }
+ewma_lambda = 0.94
+intraday_vol_reference_sessions = 20
+
+[fs_v1.events]
+cap_minutes = 1440
+
+[fs_v2]
+version = "fs_v2"
+description = "fs_v1 + mercados relacionados aprovados pelos critérios de inclusão (fase 10)."
+enabled = false
+
+[inclusion_criteria]
+min_availability = 0.95
+max_abs_correlation = 0.95
+min_fold_sign_consistency = 0.6667

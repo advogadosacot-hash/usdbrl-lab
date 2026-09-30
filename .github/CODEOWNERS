@@ -1,0 +1,5 @@
+# Workflows, configuração aprovada e testes de trava exigem o dono do projeto.
+/.github/                                @advogadosacot-hash
+/config/                                 @advogadosacot-hash
+/tests/unit/test_approved_decisions.py   @advogadosacot-hash
+/docs/decisions.md                       @advogadosacot-hash

@@ -1,0 +1,50 @@
+# Fontes de dados (seção 4; decisões D2, P4 e P6).
+# Fase 0: apenas declaração. Nenhum adaptador implementado ainda (fase 1).
+schema_version = 1
+
+# Cadeia de fallback do PREÇO-ALVO. Sem fonte confiável => "Sem previsão confiável".
+# AwesomeAPI: bloqueada até confirmação dos termos (P6) — não entra na cadeia.
+# Binance: fora da V1 (P4 + resultado de P6) — nunca substitui o preço-alvo.
+price_fallback_order = ["yahoo"]
+
+[policy]
+blocked_pending_terms = ["awesomeapi"]
+excluded_v1 = ["binance"]
+
+[yahoo]
+role = "primary"
+symbol = "BRL=X"
+intervals = ["1m", "5m", "1h", "1d"]
+publish_raw = false        # D2: dados brutos do Yahoo nunca no repositório público
+storage = "private"        # P1: usdbrl-data
+
+[bcb.ptax]
+role = "official_reference"
+currency = "USD"
+publish_allowed = true     # dado aberto; usado no painel (P2, alternativa 2)
+
+[bcb.sgs]
+role = "macro_context"
+publish_allowed = true
+max_daily_window_years = 10
+
+[bcb.sgs.series]
+selic_meta = 432
+selic_efetiva = 11
+ipca = 433
+ibc_br = 24363
+ibc_br_sa = 24364
+
+[bcb.focus]
+role = "macro_context"
+publish_allowed = true
+
+[related]
+# Candidatos a fs_v2 (fase 10), só entram pelos critérios da seção 7.
+enabled = false
+symbols = ["DX-Y.NYB", "USDMXN=X", "^BVSP", "EWZ", "^TNX", "CL=F", "GC=F"]
+
+[http]
+timeout_seconds = 20
+retry_waits_seconds = [2, 8, 30]
+retry_on_status = [429, 500, 502, 503, 504]
